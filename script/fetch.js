@@ -7,8 +7,7 @@
 // @require     file:///D:\Install\lib\jquery-3.1.1.min.js
 // @grant       GM_xmlhttpRequest
 // ==/UserScript==
-// var $j = jQuery.noConflict();
-
+// var $ = jQuery.noConflict();
 
 $(function(){
 
@@ -105,6 +104,7 @@ $(function(){
 
       GM_xmlhttpRequest({
         method: "GET",
+        cache: false,
         url: 'https://detail.tmall.com/item.htm?id=' + items[idx].id + '&r=' + new Date().getTime() + Math.random(),
         success: function(response) {
           var result = response.match(/TShop\.Setup\(\s*(\{.+\})\s*\)/);
@@ -120,6 +120,7 @@ $(function(){
           }
           GM_xmlhttpRequest({
             method: "GET",
+            cache: false,
             headers: {
               "cookie": "cna=1MDXEPWgjygCATEFA2IZMFxp; thw=cn; ubn=p; ucn=unzbyun; uc3=sg2=AiGa%2B6DXxx36ZeBrH60qrSSfjFDz20FTUYPzR%2B%2Flw8c%3D&nk2=Gdu3e2zK1TH2oNiC&id2=UojUD1bJUR%2F2Pg%3D%3D&vt3=F8dARHYtMpI6VqRms5g%3D&lg2=VT5L2FSpMGV7TQ%3D%3D; uss=W8ydzqZ0SALA1FUwR6b1muhmfIxmd5AUj1Kkrn%2FzVBchxonTCodPDvVUdg%3D%3D; lgc=zsm765732980; tracknick=zsm765732980; t=b1ed6502c238424ac9a5164551e80e92; _cc_=WqG3DMC9EA%3D%3D; tg=0; mt=ci=-1_0; l=Av7-AZwleAl389D5bWFCwL-Yzh5AOcK5; isg=AvLyKfLn_nyL1MJhPuNW5i70Qz41vvYd3vNfV7zLGKWQT5NJpRc1LV6vSVyJ; _tb_token_=1b3RqqvlAGlE; cookie2=f4b0f3c3dbe6a2bd40d1f91bdda68533; v=0",
               "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.95 Safari/537.36",
@@ -128,25 +129,27 @@ $(function(){
             url: result.initApi,
             success: function(resp) {
               _r = JSON.parse( resp );
-              console.log(_r);
-              items[idx].tm_count = _r.defaultModel.sellCountDO.sellCount;
+              items[idx].tm_count = 'NaN';
+              if (_r.defaultModel) {
+                if (_r.defaultModel.sellCountDO) {
+                  items[idx].tm_count = _r.defaultModel.sellCountDO.sellCount;
+                }
+              }
               idx++;
+              setTimeout(f, 1500);
+              if(idx>2){
+                var log = [ 'id\t促销价\t默认价格\t库存\t月销\t标题' ];
+                for(var i=0; i<items.length; i++){
+                  log.push(items[i].id + '\t' + items[i].promotion + '\t' + items[i].default_price + '\t' + items[i].stock + '\t' + items[i].tm_count + '\t' + items[i].title);
+                }
+                $('#rrtxt').val(log.join('\n'));
+              }
+            },
+            fail: function(resp){
+              idx++;
+              console.log(resp);
             }
           });
-          // var parser = new DOMParser();
-          // var _parse_html = parser.parseFromString(response,"text/xml");
-          // var detail = _parse_html.getElementById('J_AttrUL');
-          // if (detail) {
-          //   items[idx].detail = detail;
-          // }
-          setTimeout(f, 1500);
-          if(idx>2){
-            var log = [ 'id\t促销价\t默认价格\t库存\t月销\t标题\t详情' ];
-            for(var i=0; i<items.length; i++){
-              log.push(items[i].id + '\t' + items[i].promotion + '\t' + items[i].default_price + '\t' + items[i].stock + '\t' + items[i].tm_count + '\t' + items[i].title + '\t' + items[i].detail);
-            }
-            $('#rrtxt').val(log.join('\n'));
-          }
         }
       });
     }
