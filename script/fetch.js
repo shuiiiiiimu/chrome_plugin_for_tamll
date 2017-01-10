@@ -24,6 +24,17 @@ $(function(){
           var xhr = new ActiveXObject('Microsoft.XMLHTTP');
       }
 
+      //连接 和 发送 - 第二步
+      if (options.type == "GET") {
+          xhr.open("GET", options.url + "?" + params, true);
+          xhr.send(null);
+      } else if (options.type == "POST") {
+          xhr.open("POST", options.url, true);
+          //设置表单提交时的内容类型
+          xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+          xhr.send(params);
+      }
+
       //接收 - 第三步
       xhr.onreadystatechange = function () {
           if (xhr.readyState == 4) {
@@ -34,17 +45,6 @@ $(function(){
                   options.fail && options.fail(status);
               }
           }
-      }
-
-      //连接 和 发送 - 第二步
-      if (options.type == "GET") {
-          xhr.open("GET", options.url + "?" + params, true);
-          xhr.send(null);
-      } else if (options.type == "POST") {
-          xhr.open("POST", options.url, true);
-          //设置表单提交时的内容类型
-          xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-          xhr.send(params);
       }
   }
 
@@ -73,9 +73,9 @@ $(function(){
   
   var _items = $('#J_ShopSearchResult .J_TItems .pagination').prevAll().find('.item');
   for (i in _items){
-    item = _items[i];
-    item_dom = $(item);
-    a_dom = item_dom.find('a[href*="detail.tmall.com/item.htm"]')[1];
+    var item = _items[i];
+    var item_dom = $(item);
+    var a_dom = item_dom.find('a[href*="detail.tmall.com/item.htm"]')[1];
     // if($(a_dom).find('img').length>0) return;
     if(a_dom){
       var id = a_dom.href.match(/id=(\d+)/)[1];
@@ -90,19 +90,26 @@ $(function(){
         'promotion': parseFloat(item_dom.find('.c-price')[0].innerHTML)
       });
     }
+    a_dom = null;
+    item_dom = null;
+    item = null;
   }
 
-  $('#rrmsg').append( '<p>当前页面共找到宝贝：<span style="color:red; font-weight:bold;">' + items.length + '</span> 个</p><p>抓取第 <span id="cc" style="font-weight:bold; color:red;"></span> 个宝贝的库存</p>'  );
-  $('#rrmsg').append('<p style="font-weight:bold"> ↓ 单击下面的文本框，CTRL+A全选，复制，然后粘贴到excel中。</p>').append('<textarea id="rrtxt" style="display:block; clear:both; width:100%; height:200px;"></textarea>')
-
+  delete _items;
+  delete itemmap;
   var idx = 0;
+
+  $('#rrmsg').append( '<p>当前页面共找到宝贝：<span style="color:red; font-weight:bold;">' + items.length + '</span> 个</p><p>抓取第 <span id="cc" style="font-weight:bold; color:red;"></span> 个宝贝的库存</p>'  );
+  $('#rrmsg').append('<p style="font-weight:bold"> ↓ 单击下面的文本框，CTRL+A全选，复制，然后粘贴到excel中。</p>')
+  $('#rrmsg').append('<textarea id="rrtxt" style="display:block; clear:both; width:100%; height:200px;"></textarea>')
+  $('#rrtxt').append('id\t促销价\t默认价格\t库存\t月销\t标题\n');
 
   (function(){
     var f = arguments.callee;
     if(idx<items.length){
       $('#cc').html(idx+1);
 
-      GM_xmlhttpRequest({
+      var detail_req = GM_xmlhttpRequest({
         method: "GET",
         cache: false,
         url: 'https://detail.tmall.com/item.htm?id=' + items[idx].id + '&r=' + new Date().getTime() + Math.random(),
@@ -116,9 +123,8 @@ $(function(){
             for(var p in stocks){
               stock += stocks[p].stock;
             }
-            items[idx].stock = stock;
           }
-          GM_xmlhttpRequest({
+          var ajax_req = GM_xmlhttpRequest({
             method: "GET",
             cache: false,
             headers: {
@@ -128,31 +134,31 @@ $(function(){
             },
             url: result.initApi,
             success: function(resp) {
-              _r = JSON.parse( resp );
-              items[idx].tm_count = 'NaN';
-              if (_r.defaultModel) {
-                if (_r.defaultModel.sellCountDO) {
-                  items[idx].tm_count = _r.defaultModel.sellCountDO.sellCount;
+              resp = JSON.parse( resp );
+              var tm_count = 0;
+              if (resp.defaultModel) {
+                if (resp.defaultModel.sellCountDO) {
+                  tm_count = resp.defaultModel.sellCountDO.sellCount;
                 }
               }
-              idx++;
               setTimeout(f, 1500);
-              if(idx>2){
-                var log = [ 'id\t促销价\t默认价格\t库存\t月销\t标题' ];
-                for(var i=0; i<items.length; i++){
-                  log.push(items[i].id + '\t' + items[i].promotion + '\t' + items[i].default_price + '\t' + items[i].stock + '\t' + items[i].tm_count + '\t' + items[i].title);
-                }
-                $('#rrtxt').val(log.join('\n'));
-              }
+              $('#rrtxt').append(items[idx].id + '\t' + items[idx].promotion + '\t' + items[idx].default_price + '\t' + stock + '\t' + tm_count + '\t' + items[idx].title + '\n');
+              idx++;
+              resp = null;
             },
             fail: function(resp){
               idx++;
               console.log(resp);
             }
           });
+          delete ajax_req;
         }
       });
+      delete detail_req;
+    }else{
+      delete items;
+      jQuery.removeData(this);
     }
-  })();
+  })(jQuery);
 
-})
+});
