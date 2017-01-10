@@ -15,47 +15,19 @@ $(function(){
         options = options || {};
         options.type = (options.type || "GET").toUpperCase();
         options.dataType = options.dataType || "json";
-        var params = formatParams(options.data);
-
-        //创建 - 非IE6 - 第一步
-        if (window.XMLHttpRequest) {
-            var xhr = new XMLHttpRequest();
-        } else { //IE6及其以下版本浏览器
-            var xhr = new ActiveXObject('Microsoft.XMLHTTP');
-        }
-
-        //连接 和 发送 - 第二步
-        if (options.type == "GET") {
-            xhr.open("GET", options.url + "?" + params, true);
-            xhr.send(null);
-        } else if (options.type == "POST") {
-            xhr.open("POST", options.url, true);
-            //设置表单提交时的内容类型
-            xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            xhr.send(params);
-        }
-
-        //接收 - 第三步
+        var xhr = new XMLHttpRequest();
+        xhr.open(options.type, options.url, true);
+        xhr.send(null);
         xhr.onreadystatechange = function () {
             if (xhr.readyState == 4) {
-                var status = xhr.status;
-                if (status >= 200 && status < 300) {
+                if (xhr.status >= 200 && xhr.status < 300) {
                     options.success && options.success(xhr.responseText, xhr.responseXML);
                 } else {
-                    options.fail && options.fail(status);
+                    options.fail && options.fail(xhr.status);
                 }
+                xhr = null;
             }
         }
-    }
-
-    //格式化参数
-    function formatParams(data) {
-        var arr = [];
-        for (var name in data) {
-            arr.push(encodeURIComponent(name) + "=" + encodeURIComponent(data[name]));
-        }
-        arr.push(("v=" + Math.random()).replace(".",""));
-        return arr.join("&");
     }
 
 
@@ -111,7 +83,6 @@ $(function(){
 
             var detail_req = GM_xmlhttpRequest({
                 method: "GET",
-                cache: false,
                 url: 'https://detail.tmall.com/item.htm?id=' + items[idx].id + '&r=' + new Date().getTime() + Math.random(),
                 success: function(response) {
                     var result = response.match(/TShop\.Setup\(\s*(\{.+\})\s*\)/);
@@ -124,7 +95,6 @@ $(function(){
                     }
                     var ajax_req = GM_xmlhttpRequest({
                         method: "GET",
-                        cache: false,
                         headers: {
                             "cookie": "cna=1MDXEPWgjygCATEFA2IZMFxp; thw=cn; ubn=p; ucn=unzbyun; uc3=sg2=AiGa%2B6DXxx36ZeBrH60qrSSfjFDz20FTUYPzR%2B%2Flw8c%3D&nk2=Gdu3e2zK1TH2oNiC&id2=UojUD1bJUR%2F2Pg%3D%3D&vt3=F8dARHYtMpI6VqRms5g%3D&lg2=VT5L2FSpMGV7TQ%3D%3D; uss=W8ydzqZ0SALA1FUwR6b1muhmfIxmd5AUj1Kkrn%2FzVBchxonTCodPDvVUdg%3D%3D; lgc=zsm765732980; tracknick=zsm765732980; t=b1ed6502c238424ac9a5164551e80e92; _cc_=WqG3DMC9EA%3D%3D; tg=0; mt=ci=-1_0; l=Av7-AZwleAl389D5bWFCwL-Yzh5AOcK5; isg=AvLyKfLn_nyL1MJhPuNW5i70Qz41vvYd3vNfV7zLGKWQT5NJpRc1LV6vSVyJ; _tb_token_=1b3RqqvlAGlE; cookie2=f4b0f3c3dbe6a2bd40d1f91bdda68533; v=0",
                             "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.95 Safari/537.36",
