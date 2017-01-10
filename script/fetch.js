@@ -117,11 +117,9 @@ $(function(){
           var result = response.match(/TShop\.Setup\(\s*(\{.+\})\s*\)/);
           if(result.length>1){
             result = JSON.parse( result[1] );
-            items[idx].default_price = Number(result.detail.defaultItemPrice);
-            var stocks = result.valItemInfo.skuMap;
             var stock = 0;
-            for(var p in stocks){
-              stock += stocks[p].stock;
+            for(p in result.valItemInfo.skuMap){
+              stock += result.valItemInfo.skuMap[p].stock;
             }
           }
           var ajax_req = GM_xmlhttpRequest({
@@ -142,9 +140,8 @@ $(function(){
                 }
               }
               setTimeout(f, 1500);
-              $('#rrtxt').append(items[idx].id + '\t' + items[idx].promotion + '\t' + items[idx].default_price + '\t' + stock + '\t' + tm_count + '\t' + items[idx].title + '\n');
+              $('#rrtxt').append(items[idx].id + '\t' + items[idx].promotion + '\t' + Number(result.detail.defaultItemPrice) + '\t' + stock + '\t' + tm_count + '\t' + items[idx].title + '\n');
               idx++;
-              resp = null;
             },
             fail: function(resp){
               idx++;
